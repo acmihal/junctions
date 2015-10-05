@@ -86,3 +86,24 @@ class POCIBus(amap: Seq[UInt=>Bool]) extends Module
   io.master.pready := Mux1H(psels, io.slaves.map(_.pready))
   io.master.pslverr := Mux1H(psels, io.slaves.map(_.pslverr))
 }
+
+class POCIGPIO(n: Int) extends Module
+{
+  val io = new Bundle {
+    val bus = new POCIIO().flip
+    val pin = new Bundle {
+      val i = Bits(INPUT, n)
+      val o = Bits(OUTPUT, n)
+    }
+  }
+
+  val out = Reg(init = Bits(0, n))
+  when (io.bus.psel && io.bus.penable && io.bus.pwrite) {
+    out := io.bus.pwdata
+  }
+
+  io.pin.o := out
+  io.bus.prdata := Reg(init=Bits(0), next=Reg(init=Bits(0), next=io.pin.i))
+  io.bus.pready := Bool(true)
+  io.bus.pslverr := Bool(false)
+}
